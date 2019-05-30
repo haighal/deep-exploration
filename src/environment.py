@@ -1,5 +1,6 @@
 import numpy as np
 import math
+import gym
 
 class Environment(object):
     """
@@ -87,27 +88,23 @@ class CartpoleEnv(Environment):
 
         return np.array(self.state)
 
-
-### test
-if __name__=='__main__':
-    swing_up = False
-    nsteps = 50
-    print("swing up is %r, number of steps is %d" % (swing_up, nsteps))
+## test
+if __name__ == '__main__':
+    nsteps = 200
 
     np.random.seed(0)
-    env = CartpoleEnv(swing_up=swing_up)
+    env = gym.make('MountainCar-v0') 
     obs = env.reset()
     t = 0
-    print("t=%d, x %.2f, theta %.2f, theta_dot %.2f"
-        %(t, obs[0], obs[2], obs[3]))
+    print("t=%d, x %.2f, x_dot %.2f" % (t, obs[0], obs[1]))
 
     done = False
     while not done:
+        env.render()
         action = np.random.randint(3)
-        obs, done = env.step(action)
+        obs, reward, done, info= env.step(action)
         t += 1
-        print("t=%d, action %d, x %.2f, x_dot %.2f, theta %.2f, theta_dot %.2f, done %r" 
-            %(t, action, obs[0], obs[1], obs[2], obs[3], done))
-        done = done or t==nsteps
-
-
+        print("t=%d, action %d, x %.2f, x_dot %.2f, done %r" 
+            %(t, action, obs[0], obs[1], done))
+        done = done or t == nsteps
+    env.render()

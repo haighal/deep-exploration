@@ -11,12 +11,12 @@ class FeatureExtractor(object):
         pass
 
 
-class CartpoleIdentityFeature(FeatureExtractor):
+class MountainCarIdentityFeature(FeatureExtractor):
     """
-    Returns the current state vector (x, x_dot, theta, theta_dot).
+    Returns the current state vector (x, x_dot).
     """
     def __init__(self):
-        self.dimension = 4
+        self.dimension = 2
 
     def get_feature(self, observation_history):
         return observation_history[-1][0]

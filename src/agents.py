@@ -62,11 +62,11 @@ class Agent(object):
         return reward_history
 
     def _random_argmax(self, action_values):
-        argmax_list = np.where(action_values==np.max(action_values))[0]
+        argmax_list = np.where(action_values == np.max(action_values))[0]
         return self.action_set[argmax_list[np.random.randint(argmax_list.size)]]
 
     def _epsilon_greedy_action(self, action_values, epsilon):
-        if np.random.random() < 1- epsilon:
+        if np.random.random() < 1 - epsilon:
             return self._random_argmax(action_values)
         else:
             return np.random.choice(self.action_set, 1)[0]
@@ -120,7 +120,7 @@ class DQNAgent(Agent):
         discount=0.99, target_freq=10, verbose=False, print_every=1, 
         test_model_path=None):
 
-        Agent.__init__(self, [0, 1, 2], reward_function)
+        Agent.__init__(self, action_set, reward_function)
         self.feature_extractor = feature_extractor
         self.feature_dim = self.feature_extractor.dimension
 
@@ -244,7 +244,6 @@ class DQNAgent(Agent):
             if self.verbose:
                 print("dqn ep %d update target network" % self.num_episodes)
 
-
     def act(self, observation_history, action_history):
         """ select action according to an epsilon greedy policy with respect to 
         the Q network """
@@ -258,39 +257,14 @@ class DQNAgent(Agent):
             action = self._random_argmax(action_values)
         return action
 
-
     def save(self, path=None):
         if path is None:
             path = './dqn.pt'
         torch.save(self.model.state_dict(), path)
 
 
-
-def cartpole_reward_function(observation_history, action_history, 
-    reward_type='height', move_cost=0.05):
+def mountain_car_reward_function(observation_history, action_history):
     """
-    If the reward type is 'height,' agent gets a reward of 1 + cosine of the
-    pole angle per step. Agent also gets a bonus reward of 1 if pole is upright
-    and still. 
-    If the reward type is 'sparse,' agent gets 1 if the pole is upright 
-    and still and if the cart is around the center. 
-    There is a small cost for applying force to the cart. 
+    Always returns -1 because mountain car has a reward of -1 at every timestep
     """
-    state, terminated = observation_history[-1]
-    x, x_dot, theta, theta_dot = state
-    action = action_history[-1]
-
-    reward = - move_cost * np.abs(action - 1.)
-
-    if not terminated:
-        up = math.cos(theta) > 0.95
-        still = np.abs(theta_dot) <= 1
-        centered = (np.abs(x) <= 1) and (np.abs(x_dot) <= 1)
-
-        if reward_type == 'height':
-            reward += math.cos(theta) + 1 + (up and still)
-
-        elif reward_type == 'sparse':
-            reward += (up and still and centered)
-
-    return reward
+    return -1
