@@ -22,7 +22,7 @@ if __name__ == '__main__':
     env = gym.make('MountainCar-v0') 
 
     # train dqn agents
-    number_seeds = 3
+    number_seeds = 30
     for seed in trange(number_seeds):
         np.random.seed(seed)
         torch.manual_seed(seed)
@@ -46,7 +46,7 @@ if __name__ == '__main__':
         _, _, rewards = live(
             agent=agent,
             environment=env,
-            num_episodes=10, 
+            num_episodes=1000, 
             max_timesteps=500,
             verbose=True,
             print_every=50)
