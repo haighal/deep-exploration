@@ -3,7 +3,7 @@ RLSVI agent for cartpole via ensemble sampling
 '''
 
 import numpy as np
-from agents_base import Agent
+from agents import Agent
 
 class TabularRlsviAgent(Agent):
     def __init__(self,
@@ -178,7 +178,7 @@ class RLSVIIncrementalTDAgent(Agent):
             self.models =[]
             self.test_mode = True
             if self.prior_network:
-                self.models.append(DQNWithPrior(dims,scale=self.prior_scale))
+                self.models.append(DQNWithPrior(dims,scale=self.prior_variance))
             else:
                 self.models.append(MLP(dims))
             self.models[0].load_state_dict(torch.load(test_model_path))

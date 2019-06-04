@@ -5,29 +5,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import math
-
-
-class Buffer(object):
-    """
-    A finite-memory buffer that rewrites oldest data when buffer is full.
-    Stores tuples of the form (feature, action, reward, next feature). 
-    """
-    def __init__(self, size=50000):
-        self.size = size
-        self.buffer = []
-        self.next_idx = 0
-
-    def add(self, x, a, r, x_next):
-        if self.next_idx == len(self.buffer):
-            self.buffer.append((x, a, r, x_next))
-        else:
-            self.buffer[self.next_idx] = (x, a, r, x_next)
-        self.next_idx = (self.next_idx + 1) % self.size
-
-    def sample(self, batch_size=1):
-        idxs = np.random.randint(len(self.buffer), size=batch_size)
-        return [self.buffer[i] for i in idxs]
-
+from utils import Buffer, MLP
 
 class Agent(object):
     """
@@ -83,7 +61,6 @@ class Agent(object):
         action_probabilities /= np.sum(action_probabilities)
         return np.random.choice(self.action_set, 1, p=action_probabilities)[0]
 
-
 class RandomAgent(Agent):
     """
     selects actions uniformly at random from the action set
@@ -97,20 +74,6 @@ class RandomAgent(Agent):
     def update_buffer(self, observation_history, action_history):
         reward_history = self.get_episode_reward(observation_history, action_history)
         self.cummulative_reward += np.sum(reward_history)
-
-
-class MLP(nn.Module):
-    def __init__(self, dimensions):
-        super(MLP, self).__init__()
-        self.layers = nn.ModuleList()
-        for i in range(len(dimensions)-1):
-            self.layers.append(nn.Linear(dimensions[i], dimensions[i+1]))
-
-    def forward(self, x):
-        for l in self.layers[:-1]:
-            x = nn.functional.relu(l(x))
-        x = self.layers[-1](x)
-        return x
 
 
 class DQNAgent(Agent):
@@ -180,15 +143,15 @@ class DQNAgent(Agent):
             feature_history[t] = self.feature_extractor.get_feature(observation_history[:t+1])
 
         for t in range(tau-1):
-            self.buffer.add(feature_history[t], action_history[t], 
-                reward_history[t], feature_history[t+1])
+            self.buffer.add((feature_history[t], action_history[t], 
+                reward_history[t], feature_history[t+1]))
         done = observation_history[tau][1]
         if done:
             feat_next = None
         else:
             feat_next = feature_history[tau]
-        self.buffer.add(feature_history[tau-1], action_history[tau-1], 
-            reward_history[tau-1], feat_next)
+        self.buffer.add((feature_history[tau-1], action_history[tau-1], 
+            reward_history[tau-1], feat_next))
 
 
     def learn_from_buffer(self):
@@ -316,7 +279,7 @@ class TabularLsviAgent(Agent):
                     else:
                         v = max(Q[(transition[1], a)] for a in self.action_set)
                         q += transition[0] + v
-                Q[key] = q
+                Q[key] = q /  len(self.buffer[key])
         self.Q = Q
 
     def act(self, observation_history, action_history):
