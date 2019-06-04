@@ -296,7 +296,7 @@ class RLSVIIncrementalTDAgent(Agent):
                     self.models[self.index](torch.tensor(feature).float())
                     ).numpy()
             else:
-                out = (self.models[self.index](torch.tensor(feature).float()).to(device))
+                out = (self.models[self.index](torch.tensor(feature).float().to(device)))
                 action_values = (out.to("cpu")).numpy()
 
             action = self._random_argmax(action_values)
