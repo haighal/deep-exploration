@@ -30,7 +30,7 @@ if __name__ == '__main__':
     env = gym.make('MountainCar-v0') 
 
     # train dqn agents
-    number_seeds = 1
+    number_seeds = 10
     for seed in trange(number_seeds):
         np.random.seed(seed)
         torch.manual_seed(seed)
