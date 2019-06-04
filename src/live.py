@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 #import matplotlib
-#smatplotlib.backend('TkAgg')
+#matplotlib.backend('TkAgg')
 import matplotlib.pyplot as plt
 import functools
 import gym
