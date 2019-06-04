@@ -262,6 +262,67 @@ class DQNAgent(Agent):
             path = './dqn.pt'
         torch.save(self.model.state_dict(), path)
 
+# ---------------------------------------------------------
+# Tabular LSVI agent with epsilon Boltzmann
+# ---------------------------------------------------------
+class TabularLsviAgent(Agent):
+    def __init__(self,
+                 action_set,
+                 reward_function,
+                 epsilon,
+                 num_iterations,
+                 feature_extractor):
+        Agent.__init__(self,action_set,reward_function)
+        self.epsilon = epsilon
+        self.num_iterations = num_iterations
+        self.feature_extractor = feature_extractor
+
+        # buffer is a dictionary of lists
+        # the key is a feature-action pair
+        self.buffer = {(f, a): [] for f in self.feature_extractor.feature_space for a in self.action_set}
+        self.Q = {key: 100 for key in self.buffer.keys()}
+
+    def __str__(self):
+        return 'tabular_lsvi_agent_with_eBoltzmann'
+
+    def update_buffer(self, observation_history, action_history):
+        reward_history = self.get_episode_reward(observation_history, action_history)
+        self.cummulative_reward += np.sum(reward_history)
+        tau = len(action_history)
+        feature_history = [self.feature_extractor.get_feature(observation_history[:t + 1])
+                           for t in range(tau + 1)]
+        for t in range(tau - 1):
+            new_key = (feature_history[t], action_history[t])
+            new_item = (reward_history[t], feature_history[t + 1])
+            self.buffer[new_key].append(new_item)
+        done = observation_history[tau][1]
+        if done:
+            feat_next = None
+        else:
+            feat_next = feature_history[tau]
+
+        new_key = (feature_history[tau - 1], action_history[tau - 1])
+        new_item = (reward_history[tau - 1], feat_next)
+        self.buffer[new_key].append(new_item)
+
+    def learn_from_buffer(self):
+        Q = {key: 0.0 for key in self.buffer.keys()}
+        for n in range(self.num_iterations):
+            for key in self.buffer.keys():
+                q = 0.0
+                for transition in self.buffer[key]:
+                    if transition[1] == None:
+                        q += transition[0]
+                    else:
+                        v = max(Q[(transition[1], a)] for a in self.action_set)
+                        q += transition[0] + v
+                Q[key] = q
+        self.Q = Q
+
+    def act(self, observation_history, action_history):
+        feature = self.feature_extractor.get_feature(observation_history)
+        return self._epsilon_boltzmann_action([self.Q[(feature, a)] for a in self.action_set]
+                                              , self.epsilon)
 
 def mountain_car_reward_function(observation_history, action_history):
     """
