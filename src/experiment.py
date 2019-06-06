@@ -33,8 +33,9 @@ if __name__ == '__main__':
     # train dqn agents
     number_seeds = 10
     for seed in trange(number_seeds):
-        print('|'.join(['dqn_RLSVI_mountaincar', 'dims' + str(dims)]))
-        #print('|'.join(['dqn_RLSVI_mountaincar', 'noise_var' + str(noise_var), 'prior_var' + str(prior_var), 'dims' + str(dims), 'k' + str(K)]))
+        #file_name = '|'.join(['dqn_RLSVI_mountaincar', 'noise_var' + str(noise_var), 'prior_var' + str(prior_var), 'dims' + str(dims), 'k' + str(K), str(seed)])
+        file_name = '|'.join(['dqn_RLSVI_mountaincar', 'dims' + str(dims), str(seed)])
+        print(file_name)
         np.random.seed(seed)
         torch.manual_seed(seed)
         '''
@@ -82,7 +83,5 @@ if __name__ == '__main__':
             verbose=True,
             print_every=50)
 
-        #file_name = '|'.join(['dqn_RLSVI_mountaincar', 'noise_var' + str(noise_var), 'prior_var' + str(prior_var), 'dims' + str(dims), 'k' + str(K), str(seed)])
-        file_name = '|'.join(['dqn_RLSVI_mountaincar', 'dims' + str(dims), str(seed)])
         np.save(os.path.join(reward_path, file_name), rewards)
         agent.save(path=os.path.join(agent_path, file_name+'.pt'))
