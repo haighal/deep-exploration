@@ -33,7 +33,7 @@ if __name__ == '__main__':
     # train dqn agents
     number_seeds = 10
     for seed in trange(number_seeds):
-        print('|'.join(['dqn_RLSVI_mountaincar', 'noise_var' + str(noise_var), 'prior_var' + str(prior_var), 'dims' + str(dims), 'k' + str(K))
+        print('|'.join(['dqn_RLSVI_mountaincar', 'noise_var' + str(noise_var), 'prior_var' + str(prior_var), 'dims' + str(dims), 'k' + str(K)]))
         np.random.seed(seed)
         torch.manual_seed(seed)
 
@@ -60,7 +60,7 @@ if __name__ == '__main__':
             agent=agent,
             environment=env,
             num_episodes=episodes, 
-            max_timesteps=500,
+            max_timesteps=200,
             verbose=True,
             print_every=50)
 
