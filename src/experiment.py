@@ -26,12 +26,14 @@ if __name__ == '__main__':
     noise_var = 1.
     dims = [50, 50]
     episodes = 10000
+    K = 20
 
     env = gym.make('MountainCar-v0') 
 
     # train dqn agents
     number_seeds = 10
     for seed in trange(number_seeds):
+        print('|'.join(['dqn_RLSVI_mountaincar', 'noise_var' + str(noise_var), 'prior_var' + str(prior_var), 'dims' + str(dims), 'k' + str(K))
         np.random.seed(seed)
         torch.manual_seed(seed)
 
@@ -42,7 +44,7 @@ if __name__ == '__main__':
             noise_variance=noise_var,
             feature_extractor=MountainCarIdentityFeature(),
             prior_network=True,
-            num_ensemble=10,
+            num_ensemble=K,
             hidden_dims=dims,
             learning_rate=5e-4,
             buffer_size=50000,
@@ -62,6 +64,6 @@ if __name__ == '__main__':
             verbose=True,
             print_every=50)
 
-        file_name = '|'.join(['dqn_RLSVI_mountaincar', 'noise_var' + str(noise_var), 'prior_var' + str(prior_var), 'dims' + str(dims), str(seed)])
+        file_name = '|'.join(['dqn_RLSVI_mountaincar', 'noise_var' + str(noise_var), 'prior_var' + str(prior_var), 'dims' + str(dims), 'k' + str(K), str(seed)])
         np.save(os.path.join(reward_path, file_name), rewards)
         agent.save(path=os.path.join(agent_path, file_name+'.pt'))
