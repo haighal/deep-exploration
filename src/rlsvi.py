@@ -103,12 +103,25 @@ class RLSVIIncrementalTDAgent(Agent):
                  hidden_dims=[10, 10], learning_rate=5e-4, buffer_size=50000,
                  batch_size=64, num_batches=100, starts_learning=5000,
                  discount=0.99, target_freq=10, verbose=False, print_every=1,
-                 test_model_path=None):
+                 test_model_path=None, GRLSVI=True, BRLSVI=True):
         Agent.__init__(self, action_set, reward_function)
 
+        self.GRLSVI = GRLSVI
+        self.BRLSVI = BRLSVI
         self.prior_variance = prior_variance
-        self.noise_variance = noise_variance
 
+        ## No gaussian perturbations equivalent to zero variance
+        if GRLSVI:
+            self.noise_variance = noise_variance
+        else:
+            self.noise_variance = 0.0
+
+        ## On average, with the double or none bootstrap, each batch will
+        ## effectively be half as large. Account for this by doubling batch size
+
+        if BRLSVI:
+            batch_size *= 2    
+        
 
         self.feature_extractor = feature_extractor
         self.feature_dim = self.feature_extractor.dimension
@@ -204,17 +217,28 @@ class RLSVIIncrementalTDAgent(Agent):
             feature_history[t] = self.feature_extractor.get_feature(observation_history[:t+1])
 
         for t in range(tau-1):
+            if self.BRLSVI:
+                mask = np.random.randint(0, 2, size=self.num_ensemble)
+            else:
+                mask = np.random.randint(1, 2, size=self.num_ensemble)
+            
             perturbations = np.random.randn(self.num_ensemble)*np.sqrt(self.noise_variance)
             self.buffer.add((feature_history[t], action_history[t],
-                reward_history[t], feature_history[t+1], perturbations))
+                reward_history[t], feature_history[t+1], perturbations, mask))
+        
         done = observation_history[tau][1]
         if done:
             feat_next = None
         else:
             feat_next = feature_history[tau]
+
+        if self.BRLSVI:
+            mask = np.random.randint(0, 2, size=self.num_ensemble)
+        else:
+            mask = np.random.randint(1, 2, size=self.num_ensemble)  
         perturbations = np.random.randn(self.num_ensemble)*np.sqrt(self.noise_variance)
         self.buffer.add((feature_history[tau-1], action_history[tau-1],
-            reward_history[tau-1], feat_next, perturbations))
+            reward_history[tau-1], feat_next, perturbations, mask))
 
 
     def learn_from_buffer(self):
@@ -229,27 +253,38 @@ class RLSVIIncrementalTDAgent(Agent):
         for _ in range(self.num_batches):
             for sample_num in range(self.num_ensemble):
                 minibatch = self.buffer.sample(batch_size=self.batch_size)
+                
+                bootstrap_keep = []
+                for transition_ind in range(self.batch_size):
+                    if minibatch[transition_ind][5][sample_num] == 1:
+                        bootstrap_keep.append(transition_ind)
 
-                feature_batch = torch.zeros(self.batch_size, self.feature_dim, device=device)
-                action_batch = torch.zeros(self.batch_size, 1, dtype=torch.long, device=device)
-                reward_batch = torch.zeros(self.batch_size, 1, device=device)
-                perturb_batch = torch.zeros(self.batch_size,self.num_ensemble, device=device)
+                minibatch = [minibatch[i] for i in bootstrap_keep]
+                effective_batch_size = len(minibatch)
+
+                feature_batch = torch.zeros(effective_batch_size, self.feature_dim, device=device)
+                action_batch = torch.zeros(effective_batch_size, 1, dtype=torch.long, device=device)
+                reward_batch = torch.zeros(effective_batch_size, 1, device=device)
+                perturb_batch = torch.zeros(effective_batch_size, self.num_ensemble, device=device)
+                mask_batch = torch.zeros(effective_batch_size, self.num_ensemble, device=device)
                 non_terminal_idxs = []
                 next_feature_batch = []
 
                 for i, d in enumerate(minibatch):
-                    s, a, r, s_next, perturb = d
+                    s, a, r, s_next, perturb, mask = d
                     feature_batch[i] = torch.from_numpy(s)
                     action_batch[i] = torch.tensor(a, dtype=torch.long)
                     reward_batch[i] = r
                     perturb_batch[i] = torch.from_numpy(perturb)
+                    mask_batch[i] = torch.from_numpy(mask)
                     if s_next is not None:
                         non_terminal_idxs.append(i)
                         next_feature_batch.append(s_next)
+
                 model_estimates = ( self.models[sample_num](feature_batch)
                                 ).gather(1, action_batch).float()
 
-                future_values = torch.zeros(self.batch_size, device=device)
+                future_values = torch.zeros(effective_batch_size, device=device)
                 if non_terminal_idxs != []:
                     next_feature_batch = torch.tensor(next_feature_batch,
                                                       dtype=torch.float, device=device)
@@ -257,7 +292,6 @@ class RLSVIIncrementalTDAgent(Agent):
                         self.target_nets[sample_num](next_feature_batch)
                         ).max(1)[0].detach()
                 future_values = future_values.unsqueeze(1)
-                temp = perturb_batch[:,sample_num].unsqueeze(1)
                 target_values = reward_batch + self.discount * future_values \
                                 + perturb_batch[:,sample_num].unsqueeze(1)
 
