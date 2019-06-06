@@ -33,10 +33,11 @@ if __name__ == '__main__':
     # train dqn agents
     number_seeds = 10
     for seed in trange(number_seeds):
-        print('|'.join(['dqn_RLSVI_mountaincar', 'noise_var' + str(noise_var), 'prior_var' + str(prior_var), 'dims' + str(dims), 'k' + str(K)]))
+        print('|'.join(['dqn_RLSVI_mountaincar', 'dims' + str(dims)]))
+        #print('|'.join(['dqn_RLSVI_mountaincar', 'noise_var' + str(noise_var), 'prior_var' + str(prior_var), 'dims' + str(dims), 'k' + str(K)]))
         np.random.seed(seed)
         torch.manual_seed(seed)
-
+        '''
         agent = RLSVIIncrementalTDAgent(
             action_set=[0, 1, 2],
             reward_function=mountain_car_reward_function,
@@ -54,6 +55,23 @@ if __name__ == '__main__':
             discount=0.99,
             target_freq=10,
             verbose=True,
+            print_every=10)
+        '''
+
+        agent = DQNAgent(
+            action_set=[0, 1, 2],
+            reward_function=mountain_car_reward_function,
+            feature_extractor=MountainCarIdentityFeature(),
+            hidden_dims=[50, 50],
+            learning_rate=5e-4,
+            buffer_size=50000,
+            batch_size=64,
+            num_batches=100,
+            starts_learning=5000,
+            final_epsilon=0.02,
+            discount=0.99,
+            target_freq=10,
+            verbose=True, 
             print_every=10)
 
         _, _, rewards = live(
