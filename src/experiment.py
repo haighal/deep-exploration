@@ -83,6 +83,6 @@ if __name__ == '__main__':
             print_every=50)
 
         #file_name = '|'.join(['dqn_RLSVI_mountaincar', 'noise_var' + str(noise_var), 'prior_var' + str(prior_var), 'dims' + str(dims), 'k' + str(K), str(seed)])
-        file_name = '|'.join(['dqn_RLSVI_mountaincar', 'dims' + str(dims)])
+        file_name = '|'.join(['dqn_RLSVI_mountaincar', 'dims' + str(dims), str(seed)])
         np.save(os.path.join(reward_path, file_name), rewards)
         agent.save(path=os.path.join(agent_path, file_name+'.pt'))
