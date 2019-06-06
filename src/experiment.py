@@ -14,7 +14,7 @@ from feature import MountainCarIdentityFeature
 import gym
 
 if __name__ == '__main__':
-    print(os.listdir('.'))
+#    print(os.listdir('.'))
     reward_path = './results/'
     agent_path = './agents/'
 
@@ -22,9 +22,9 @@ if __name__ == '__main__':
     ## Start with noise variance of 1 because we incur a penalty of 1 at each timestep (in Deep Sea, we used
     ## a noise variance of 0.01, which was the same as the move penalty at each).
     ## Start with a prior variance of 10
-    prior_var = 10.0
-    noise_var = 1.0
-    dims = [25, 25]
+    prior_var = 100.
+    noise_var = 1.
+    dims = [50, 50]
     episodes = 10000
 
     env = gym.make('MountainCar-v0') 
